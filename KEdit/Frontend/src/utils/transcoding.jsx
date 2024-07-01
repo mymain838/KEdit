@@ -7,16 +7,19 @@ import { fetchFile } from "@ffmpeg/ffmpeg";
   sliderValues : 슬라이더 범위 [0, 100]
   setIsLoading : 로딩 여부 설정
   ffmpeg, : ffmpeg 객체
-  videoSrc, : 비디오 정보(가공전)
+  videoSrcRef, : 비디오 정보(가공전)
   extensionRef : 확장자 정보
   quality : 비디오 퀄리티 설정(URL 타입만 지원)
   mainUrl  : 메인 영상 정보(가공후)
 
 */
 const extensionType = {
-  mp3: "audio",
   mp4: "video",
+  avi: "video",
+  ogg: "video",
+  webm: "video",
   gif: "image",
+  mp3: "audio",
 };
 
 export const transcodeFile = async (
@@ -24,8 +27,9 @@ export const transcodeFile = async (
   sliderValues,
   setProgress,
   setIsLoading,
-  videoSrc,
-  extensionRef
+  videoSrcRef,
+  extensionRef,
+  speed = 1
 ) => {
   const inputFileName = "input.mp4";
   const [min, max] = sliderValues;
@@ -40,7 +44,7 @@ export const transcodeFile = async (
   // console.log(max);
 
   try {
-    ffmpeg.FS("writeFile", inputFileName, await fetchFile(videoSrc.current));
+    ffmpeg.FS("writeFile", inputFileName, await fetchFile(videoSrcRef.current));
 
     ffmpeg.setProgress(({ ratio }) => {
       setProgress(ratio * 100);
@@ -53,6 +57,10 @@ export const transcodeFile = async (
       `${minTime}`,
       "-to",
       `${maxTime}`,
+      "-vf",
+      `setpts=${1 / parseInt(speed)}*PTS`,
+      "-af",
+      `atempo=${parseInt(speed)}`,
       `output.${extensionRef.current}`
     );
 
@@ -77,23 +85,23 @@ export const transcodeUrl = async (
   sliderValues,
   setProgress,
   setIsLoading,
-  videoSrc,
+  videoSrcRef,
   extensionRef,
   quality,
-  mainUrl
+  speed = 1
 ) => {
   //   ffmpeg.FS(
   //     "writeFile",
   //     inputFileName,
   //     await fetchFile(
-  //       `https://vds-h285.onrender.com/download?url=${videoSrc.current}&quality=low`
+  //       `https://vds-h285.onrender.com/download?url=${videoSrcRef.current}&quality=low`
   //     )
   //   );
 
   try {
     const inputFileName = "input.mp4";
     const [min, max] = sliderValues;
-
+    console.log(speed);
     const minTime = sliderValueToVideoTime(playerState.duration, min);
     const maxTime = sliderValueToVideoTime(playerState.duration, max);
 
@@ -103,7 +111,7 @@ export const transcodeUrl = async (
       "writeFile",
       inputFileName,
       await fetchFile(
-        `http://localhost:3000/download?url=${videoSrc.current}&quality=${quality}`
+        `http://localhost:3000/download?url=${videoSrcRef.current}&quality=${quality}`
       )
     );
 
@@ -113,19 +121,19 @@ export const transcodeUrl = async (
       }
     });
 
-    if (mainUrl) {
-      await ffmpeg.run(
-        "-i",
-        inputFileName,
-        "-ss",
-        `${minTime}`,
-        "-to",
-        `${maxTime}`,
-        `output.${extensionRef.current}`
-      );
-    } else {
-      await ffmpeg.run("-i", inputFileName, `output.${extensionRef.current}`);
-    }
+    await ffmpeg.run(
+      "-i",
+      inputFileName,
+      "-ss",
+      `${minTime}`,
+      "-to",
+      `${maxTime}`,
+      "-vf",
+      `setpts=${1 / parseInt(speed)}*PTS`,
+      "-af",
+      `atempo=${parseInt(speed)}`,
+      `output.${extensionRef.current}`
+    );
 
     const data = ffmpeg.FS("readFile", `output.${extensionRef.current}`);
 

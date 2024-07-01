@@ -53,7 +53,7 @@ app.get("/download", async (req, res) => {
   }
 });
 
-app.get("/blob", async (req, res) => {
+app.get("/buffer", async (req, res) => {
   const { url, quality } = req.query;
 
   if (!url) {
@@ -90,7 +90,7 @@ app.get("/blob", async (req, res) => {
   }
 });
 
-app.get("/meta", async (req, res) => {
+app.get("/title", async (req, res) => {
   const { url } = req.query;
 
   if (!url) {

@@ -1,4 +1,5 @@
 import { message } from "antd";
+import { fetchArrayBuffer } from "../api/api,js";
 
 export const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
 
@@ -27,7 +28,7 @@ export const download = (url) => {
 };
 
 export function sliderValueToVideoTime(duration, sliderValue) {
-  return Math.floor((duration * sliderValue) / 100);
+  return (duration * sliderValue) / 100;
 }
 
 export function formatTime(seconds) {
@@ -48,28 +49,21 @@ export function formatTime(seconds) {
 }
 
 export async function creatBlob(url, quality) {
-  try {
-    const response = await fetch(
-      `http://localhost:3000/blob?url=${url}&quality=${quality}`
-    );
-    const data = await response.json();
-    const base64 = data.base64;
+  const data = await fetchArrayBuffer(url, quality);
+  const base64 = data.base64;
 
-    // Convert base64 to binary string
-    const binaryString = atob(base64);
+  // Convert base64 to binary string
+  const binaryString = atob(base64);
 
-    // Convert binary string to array buffer
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-
-    // Convert array buffer to blob
-    const blob = new Blob([bytes], { type: "video/mp4" });
-
-    return blob;
-  } catch (error) {
-    console.error("Error ", error);
+  // Convert binary string to array buffer
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
   }
+
+  // Convert array buffer to blob
+  const blob = new Blob([bytes], { type: "video/mp4" });
+
+  return blob;
 }

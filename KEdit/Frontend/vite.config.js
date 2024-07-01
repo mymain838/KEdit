@@ -8,14 +8,6 @@ export default defineConfig({
       "Cross-Origin-Opener-Policy": "same-origin",
       "Cross-Origin-Embedder-Policy": "require-corp",
     },
-    // proxy: {
-    //   "/download": {
-    //     target: "http://localhost:3000",
-    //     changeOrigin: true,
-    //     secure: false,
-    //     rewrite: (path) => path.replace(/^\/download/, "/download"),
-    //   },
-    // },
   },
   plugins: [react()],
 });

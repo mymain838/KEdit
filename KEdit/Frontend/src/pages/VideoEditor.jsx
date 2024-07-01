@@ -1,53 +1,170 @@
 import { VideoCameraAddOutlined } from "@ant-design/icons";
-import { Button, Input, Popover, Radio, Slider, Switch, message } from "antd";
-import { useEffect, useRef, useState } from "react";
+import {
+  Button,
+  Input,
+  Popover,
+  Radio,
+  Slider,
+  Switch,
+  Tabs,
+  message,
+} from "antd";
+import { useContext, useEffect, useRef, useState } from "react";
 import ReactPlayer from "react-player";
 import Loading from "../components/Loading";
-import { createFFmpeg, fetchFile } from "@ffmpeg/ffmpeg";
-import {
-  creatBlob,
-  download,
-  formatTime,
-  sliderValueToVideoTime,
-} from "../utils/helper";
+import { createFFmpeg } from "@ffmpeg/ffmpeg";
+import { creatBlob, download, sliderValueToVideoTime } from "../utils/helper";
 import MainControl from "../components/VideoEditor/MainControl";
-import { transcodeUrl } from "../utils/transcoding";
-export const ffmpeg = createFFmpeg({
-  log: true,
-  arguments: ["-s", "ASSERTIONS=1"],
-  TOTAL_MEMORY: 2048 * 1024 * 1024,
-});
+import { fetchTitle } from "../api/api,js";
+import { LoginContext } from "../App";
+import DivideControl from "../components/VideoEditor/DivideControl";
+import { transcodeFile, transcodeUrl } from "../utils/transcoding";
+export const ffmpeg = createFFmpeg({ log: true });
 
 const VideoEditor = () => {
   // ffmpeg 진행상황 컨트롤
   const [progress, setProgress] = useState("");
   // 로딩 컨트롤
   const [isLoading, setIsLoading] = useState(false);
+  //제목
+  const [title, setTitle] = useState("");
   // URL 인풋 값
   const [inputUrl, setInputUrl] = useState("");
-  // 메인 화면 값
+  // 메인 화면 Output값
   const [mainUrl, setMainUrl] = useState("");
-  // 실제  비디오 값(가공후)
+  // 비디오 Output값
   const [videoUrl, setVideoUrl] = useState("");
   const [ishover, setIsHover] = useState(false);
   const [isPro, setIsPro] = useState(false);
   //퀄리티 설정
   const [quality, setQuality] = useState("low");
-
+  // 슬라이더 값
   const [sliderValues, setSliderValues] = useState([0, 100]);
-
+  // 플레이어 상태
   const [playerState, setPlayerState] = useState({
     duration: 0,
     playedSeconds: 0,
   });
+  // 로그인 컨텍스트
+  const [isLogin] = useContext(LoginContext);
 
-  // 비디오 경로(가공전)
-  const videoSrc = useRef("");
+  // 비디오 경로
+  const videoSrcRef = useRef("");
   // ReactPlayer의 참조를 저장할 ref
   const playerRef = useRef(null);
+  // input 과 업로드 버튼 연동 할 ref
   const firstUploadRef = useRef();
-  const messageRef = useRef(null);
+  //확장자 ref
   const extensionRef = useRef("mp4");
+
+  //Divide Ref
+  const divideIdRef = useRef(0);
+
+  const [divideItem, setDivideItem] = useState([]);
+
+  const tabsItem = [
+    {
+      label: `나누기`,
+      key: "divide",
+      children: (
+        <article>
+          {divideItem.map((item) => (
+            <DivideControl
+              key={item.id}
+              id={item.id}
+              divideItem={divideItem}
+              setDivideItem={setDivideItem}
+              mainUrl={mainUrl}
+              setProgress={setProgress}
+              setIsLoading={setIsLoading}
+              videoSrcRef={videoSrcRef}
+            />
+          ))}
+
+          <div className="flex gap-2 justify-center items-center">
+            <Button
+              className="mt-3 flex-grow"
+              type="primary"
+              size="large"
+              onClick={() => {
+                divideIdRef.current += 1;
+                setDivideItem([
+                  ...divideItem,
+                  {
+                    id: divideIdRef.current,
+                    speed: "1",
+                    quality: "low",
+                    extension: "mp4",
+                    sliderValues: [0, 100],
+                    playerState: {
+                      duration: 0,
+                      playedSeconds: 0,
+                    },
+                  },
+                ]);
+              }}
+            >
+              추가하기
+            </Button>
+            {divideItem.length > 0 && (
+              <Button
+                className="mt-3 flex-grow"
+                type="primary"
+                size="large"
+                onClick={async () => {
+                  for (const item of divideItem) {
+                    let url = "undefined";
+
+                    if (typeof videoSrcRef.current === "string") {
+                      url = await transcodeUrl(
+                        item.playerState,
+                        item.sliderValues,
+                        setProgress,
+                        setIsLoading,
+                        videoSrcRef,
+                        { current: item.extension },
+                        item.quality,
+                        item.speed
+                      );
+                    } else {
+                      url = await transcodeFile(
+                        item.playerState,
+                        item.sliderValues,
+                        setProgress,
+                        setIsLoading,
+                        videoSrcRef,
+                        { current: item.extension },
+                        item.speed
+                      );
+                    }
+
+                    download(url);
+                  }
+                }}
+              >
+                일괄 받기
+              </Button>
+            )}
+            {divideItem.length > 1 && (
+              <Button className="mt-3 flex-grow" type="primary" size="large">
+                합치기
+              </Button>
+            )}
+          </div>
+        </article>
+      ),
+    },
+    {
+      label: `다중 병합`,
+      key: "merge",
+      children: <div>다중병합존</div>,
+    },
+    {
+      label: `필터`,
+      key: "filter",
+      children: <div>필터존</div>,
+    },
+  ];
 
   const handleUrl = async () => {
     if (!inputUrl) {
@@ -58,7 +175,7 @@ const VideoEditor = () => {
       return;
     }
 
-    videoSrc.current = inputUrl;
+    videoSrcRef.current = inputUrl;
 
     // if (mainUrl) {
     //   //이럴 경우가 없음 생각필요
@@ -67,7 +184,7 @@ const VideoEditor = () => {
     //     sliderValues,
     //     setProgress,
     //     setIsLoading,
-    //     videoSrc,
+    //     videoSrcRef,
     //     extensionRef,
     //     quality,
     //     mainUrl
@@ -78,6 +195,9 @@ const VideoEditor = () => {
     setIsLoading(true);
     const blob = await creatBlob(inputUrl, quality);
     setMainUrl(URL.createObjectURL(blob));
+
+    const title = await fetchTitle(videoSrcRef.current);
+    setTitle(title);
     setIsLoading(false);
     // }
   };
@@ -87,32 +207,35 @@ const VideoEditor = () => {
       ffmpeg.load().then((Shar) => {});
     }
   }, []);
-
+  console.log(mainUrl);
   return (
     <article className="flex flex-col gap-2 ">
       {isLoading && <Loading progress={progress} />}
 
+      <input
+        className="hidden"
+        ref={firstUploadRef}
+        name="upload"
+        type="file"
+        accept="video/*"
+        onChange={(e) => {
+          videoSrcRef.current = e.target.files[0];
+          setMainUrl(URL.createObjectURL(videoSrcRef.current));
+          setTitle(videoSrcRef.current.name);
+        }}
+      />
       <article className="flex flex-col gap-2">
         <section className="flex justify-between">
-          <input
-            className="hidden"
-            ref={firstUploadRef}
-            name="upload"
-            type="file"
-            accept="video/*"
-            onChange={(e) => {
-              videoSrc.current = e.target.files[0];
-              setMainUrl(URL.createObjectURL(videoSrc.current));
-            }}
-          />
           <span className="text-gray-400">Video Edit</span>
-          {videoSrc.current && (
+          {videoSrcRef.current && (
             <Button
               type="primary"
               onClick={() => {
                 setVideoUrl("");
                 setMainUrl("");
-                videoSrc.current = "";
+                setTitle("");
+                setDivideItem([]);
+                videoSrcRef.current = "";
                 setSliderValues([0, 100]);
               }}
             >
@@ -123,7 +246,8 @@ const VideoEditor = () => {
 
         <section>
           {mainUrl ? (
-            <div className="flex flex-col justify-center items-center">
+            <div className="flex flex-col justify-center items-center text-center">
+              <h1 className="text-xl font-bold mt-2 ">{title}</h1>
               <ReactPlayer
                 ref={playerRef}
                 width="100%"
@@ -134,7 +258,9 @@ const VideoEditor = () => {
                   // 총 시간 저장
                   setPlayerState({ ...playerState, duration: duration });
                 }}
+                progressInterval={100}
                 onProgress={({ playedSeconds, played }) => {
+                  console.log(playedSeconds);
                   const maxTime = sliderValueToVideoTime(
                     playerState.duration,
                     sliderValues[1]
@@ -155,13 +281,7 @@ const VideoEditor = () => {
                     playerRef.current.seekTo(minTime, "seconds");
                   }
                 }}
-              >
-                {/* <source src={URL.createObjectURL(video)} />
-
-            <BigPlayButton position="center" />
-            <LoadingSpinner />
-            <ControlBar disableCompletely></ControlBar> */}
-              </ReactPlayer>
+              ></ReactPlayer>
             </div>
           ) : (
             <div
@@ -247,7 +367,7 @@ const VideoEditor = () => {
           setIsPro={setIsPro}
           sliderValues={sliderValues}
           setSliderValues={setSliderValues}
-          videoSrcRef={videoSrc}
+          videoSrcRef={videoSrcRef}
           extensionRef={extensionRef}
           setVideoUrl={setVideoUrl}
           setProgress={setProgress}
@@ -256,6 +376,14 @@ const VideoEditor = () => {
           mainUrl={mainUrl}
         />
       )}
+
+      {mainUrl &&
+        isPro &&
+        (isLogin ? (
+          <Tabs defaultActiveKey="divide" centered items={tabsItem} />
+        ) : (
+          <div>로그인 해라</div>
+        ))}
     </article>
   );
 };

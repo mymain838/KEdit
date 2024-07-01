@@ -22,6 +22,7 @@ const MainControl = ({
   quality,
   mainUrl,
 }) => {
+  console.log("컨트롤 렌더");
   const handleDownload = async (e) => {
     let url = "undefined";
     if (!videoSrcRef.current) {
@@ -38,8 +39,7 @@ const MainControl = ({
         setIsLoading,
         videoSrcRef,
         extensionRef,
-        quality,
-        mainUrl
+        quality
       );
     } else {
       url = await transcodeFile(

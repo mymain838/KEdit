@@ -1,0 +1,44 @@
+{
+  "name": "imran-downloader",
+  "version": "2.0.6",
+  "description": "Fetch Url Downloads From Instagram & Facebook & TikTok & YouTube & Twitter",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node src/test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MR-IMRAN-60/imran-downloader.git"
+  },
+  "keywords": [
+    "instagram",
+    "downloader",
+    "media",
+    "link",
+    "tiktok",
+    "tikvm",
+    "video",
+    "fbdownload",
+    "twdown.net",
+    "fbdownload",
+    "download",
+    "facebook",
+    "fbdown",
+    "youtube",
+    "yt download",
+    "Twitter",
+    "imran"
+  ],
+  "author": "IMRAN",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/MR-IMRAN-60/imran-downloader/issues"
+  },
+  "homepage": "https://github.com/MR-IMRAN-60/imran-downloader#readme",
+  "dependencies": {
+    "got": "^11.8.3",
+    "cheerio": "~1.0.0-rc.5",
+    "axios": "^1.6.7",
+    "request": "^2.88.2"
+  }
+}
