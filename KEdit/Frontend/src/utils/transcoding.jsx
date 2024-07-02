@@ -163,11 +163,7 @@ export const transcodeDivide = async (
         item.sliderValues[1]
       );
 
-      ffmpeg.FS(
-        "writeFile",
-        `input${item.id}.mp4`,
-        await fetchFile(item.videoSrc)
-      );
+      ffmpeg.FS("writeFile", `input${item.id}.mp4`, await fetchFile(src));
 
       ffmpeg.setProgress(({ ratio }) => {
         if (ratio * 100 > 0) {
