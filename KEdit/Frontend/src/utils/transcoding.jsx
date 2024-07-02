@@ -150,6 +150,10 @@ export const transcodeDivide = async (
     setIsLoading(true);
 
     for (const item of divideItem) {
+      const src =
+        typeof item.videoSrc === "string"
+          ? `https://kedit.onrender.com/download?url=${item.videoSrc}`
+          : item.videoSrc;
       const minTime = sliderValueToVideoTime(
         item.playerState.duration,
         item.sliderValues[0]
