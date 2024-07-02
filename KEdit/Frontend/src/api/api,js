@@ -1,5 +1,5 @@
 export const host = "https://kedit.onrender.com";
-
+// export const host = "http://localhost:3000";
 export const fetchArrayBuffer = async (url, quality) => {
   try {
     const response = await fetch(

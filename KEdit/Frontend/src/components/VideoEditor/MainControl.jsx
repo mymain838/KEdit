@@ -22,7 +22,6 @@ const MainControl = ({
   quality,
   mainUrl,
 }) => {
-  console.log("컨트롤 렌더");
   const handleDownload = async (e) => {
     let url = "undefined";
     if (!videoSrcRef.current) {

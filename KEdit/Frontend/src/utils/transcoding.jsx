@@ -37,12 +37,6 @@ export const transcodeFile = async (
   const maxTime = sliderValueToVideoTime(playerState.duration, max);
   setIsLoading(true);
 
-  // console.log(minTime);
-  // console.log(maxTime);
-  // console.log(PlayerState.duration);
-  // console.log(min);
-  // console.log(max);
-
   try {
     ffmpeg.FS("writeFile", inputFileName, await fetchFile(videoSrcRef.current));
 
@@ -90,18 +84,10 @@ export const transcodeUrl = async (
   quality,
   speed = 1
 ) => {
-  //   ffmpeg.FS(
-  //     "writeFile",
-  //     inputFileName,
-  //     await fetchFile(
-  //       `https://vds-h285.onrender.com/download?url=${videoSrcRef.current}&quality=low`
-  //     )
-  //   );
-
   try {
     const inputFileName = "input.mp4";
     const [min, max] = sliderValues;
-    console.log(speed);
+
     const minTime = sliderValueToVideoTime(playerState.duration, min);
     const maxTime = sliderValueToVideoTime(playerState.duration, max);
 
@@ -113,6 +99,9 @@ export const transcodeUrl = async (
       await fetchFile(
         `https://kedit.onrender.com/download?url=${videoSrcRef.current}&quality=${quality}`
       )
+      // await fetchFile(
+      //   `http://localhost:3000/download?url=${videoSrcRef.current}&quality=${quality}`
+      // )
     );
 
     ffmpeg.setProgress(({ ratio }) => {
@@ -148,5 +137,135 @@ export const transcodeUrl = async (
   } catch (e) {
     alert(e);
     setIsLoading(false);
+  }
+};
+
+export const transcodeDivide = async (
+  setProgress,
+  setIsLoading,
+  divideItem,
+  extension
+) => {
+  try {
+    setIsLoading(true);
+
+    for (const item of divideItem) {
+      const minTime = sliderValueToVideoTime(
+        item.playerState.duration,
+        item.sliderValues[0]
+      );
+      const maxTime = sliderValueToVideoTime(
+        item.playerState.duration,
+        item.sliderValues[1]
+      );
+
+      ffmpeg.FS(
+        "writeFile",
+        `input${item.id}.mp4`,
+        await fetchFile(item.videoSrc)
+      );
+
+      ffmpeg.setProgress(({ ratio }) => {
+        if (ratio * 100 > 0) {
+          setProgress(ratio * 100);
+        }
+      });
+
+      await ffmpeg.run(
+        "-i",
+        `input${item.id}.mp4`,
+        "-ss",
+        `${minTime}`,
+        "-to",
+        `${maxTime}`,
+        "-vf",
+        `setpts=${1 / parseInt(item.speed)}*PTS`,
+        "-af",
+        `atempo=${parseInt(item.speed)}`,
+        `output${item.id}.mp4`
+      );
+    }
+
+    let concatList = "concatList.txt";
+    let listContent = divideItem
+      .map((item) => `file 'output${item.id}.mp4'`)
+      .join("\n");
+    ffmpeg.FS("writeFile", concatList, listContent);
+
+    await ffmpeg.run(
+      "-f",
+      "concat",
+      "-safe",
+      "0",
+      "-i",
+      concatList,
+      "-c",
+      "copy",
+      `final_output.${extension}`
+    );
+
+    const data = ffmpeg.FS("readFile", `final_output.${extension}`);
+    const dataUrl = URL.createObjectURL(
+      new Blob([data.buffer], { type: `video/${extension}` })
+    );
+
+    setIsLoading(false);
+    return dataUrl;
+  } catch (e) {
+    alert(e);
+  }
+};
+
+export const transcodeFilter = async (
+  videoSrc,
+  extension,
+  text,
+  textSize,
+  textColor,
+  textPosition,
+  hue,
+  bright,
+  setIsLoading,
+  setProgress
+) => {
+  try {
+    setIsLoading(true);
+    const src =
+      typeof videoSrc === "string"
+        ? `https://kedit.onrender.com/download?url=${videoSrcRef.current}&quality=${quality}`
+        : videoSrc;
+
+    // const src =
+    //   typeof videoSrc === "string"
+    //     ? `http://localhost:3000/download?url=${videoSrc}`
+    //     : videoSrc;
+
+    ffmpeg.FS("writeFile", `input.mp4`, await fetchFile(src));
+
+    ffmpeg.setProgress(({ ratio }) => {
+      if (ratio * 100 > 0) {
+        setProgress(ratio * 100);
+      }
+    });
+    // 버전 이슈
+    await ffmpeg.run(
+      "-i",
+      `input.mp4`,
+      "-vf",
+      `drawtext=text='${text}':fontsize=${textSize}:fontcolor=${textColor}:x=${textPosition[0]}:y=${textPosition[1]}`,
+      `hue=s=${hue}`,
+      `eq=brightness=${bright}`,
+      `output.${extension}`
+    );
+    const data = ffmpeg.FS("readFile", `output.${extension}`);
+
+    const dataUrl = URL.createObjectURL(
+      new Blob([data.buffer], { type: `video/${extension}` })
+    );
+
+    setIsLoading(false);
+    return dataUrl;
+  } catch (e) {
+    alert(e);
   }
 };

@@ -4,6 +4,9 @@ export default {
   theme: {
     extend: {},
   },
+  variants: {
+    cursor: ["responsive", "hover"],
+  },
   plugins: [],
   darkMode: "class",
 };

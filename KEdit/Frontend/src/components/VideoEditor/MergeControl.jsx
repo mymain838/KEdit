@@ -1,23 +1,29 @@
-import { VideoCameraAddOutlined } from "@ant-design/icons";
+import { PlusOutlined } from "@ant-design/icons";
 import { Button, Form, Input, Select, Slider } from "antd";
 import { useRef, useState } from "react";
-import ReactPlayer from "react-player";
 import {
   download,
   formatTime,
   sliderValueToVideoTime,
 } from "../../utils/helper";
-import { transcodeFile, transcodeUrl } from "../../utils/transcoding";
+import ReactPlayer from "react-player";
+import { transcodeFile } from "../../utils/transcoding";
 
-const DivideControl = ({
+const MergeControl = ({
   id,
-  mainUrl,
-  divideItem,
-  setDivideItem,
+  isMain,
+  mergeItem,
+  setMergeItem,
   setProgress,
   setIsLoading,
-  videoSrcRef,
+  mainVideoSrc,
+  mergevideoSrc,
 }) => {
+  const videoSrcRef = useRef(URL.createObjectURL(mergevideoSrc));
+  const [ishover, setIsHover] = useState(false);
+  const [mergeData, setMergeData] = useState([]);
+  const mergeUploadRef = useRef(null);
+
   const [name, setName] = useState("output");
   const [speed, setSpeed] = useState("1");
   const [quality, setQuality] = useState("low");
@@ -48,51 +54,38 @@ const DivideControl = ({
     }
   };
   const update = (key, value) => {
-    const modifyData = divideItem.map((item) =>
+    const modifyData = mergeItem.map((item) =>
       parseInt(item.id) === parseInt(id) ? { ...item, [key]: value } : item
     );
-    setDivideItem(modifyData);
+    setMergeItem(modifyData);
   };
   const updateState = (key, value) => {
-    const modifyData = divideItem.map((item) =>
+    const modifyData = mergeItem.map((item) =>
       parseInt(item.id) === parseInt(id)
         ? { ...item, playerState: { ...item.playerState, [key]: value } }
         : item
     );
-    setDivideItem(modifyData);
+    setMergeItem(modifyData);
   };
   const handleDelete = () => {
-    const modifyData = divideItem.filter((item) => {
+    const modifyData = mergeItem.filter((item) => {
       return parseInt(item.id) !== parseInt(id);
     });
-    setDivideItem(modifyData);
+    setMergeItem(modifyData);
   };
 
   const handleDownload = async (e) => {
     let url = "undefined";
 
-    if (typeof videoSrcRef.current === "string") {
-      url = await transcodeUrl(
-        playerState,
-        sliderValues,
-        setProgress,
-        setIsLoading,
-        videoSrcRef,
-        { current: extension },
-        quality,
-        speed
-      );
-    } else {
-      url = await transcodeFile(
-        playerState,
-        sliderValues,
-        setProgress,
-        setIsLoading,
-        videoSrcRef,
-        { current: extension },
-        speed
-      );
-    }
+    url = await transcodeFile(
+      playerState,
+      sliderValues,
+      setProgress,
+      setIsLoading,
+      videoSrcRef,
+      { current: extension },
+      speed
+    );
 
     download(url, name, extension);
   };
@@ -148,7 +141,11 @@ const DivideControl = ({
         </div>
 
         <Form>
-          <Form.Item label={<div className="text-lg">No.{id}</div>}>
+          <Form.Item
+            label={
+              <div className="text-lg">{isMain ? `Main` : `No.${id}`}</div>
+            }
+          >
             <Input
               value={name}
               onChange={(e) => {
@@ -160,22 +157,31 @@ const DivideControl = ({
         </Form>
 
         <div className="flex justify-center gap-10">
-          <Button
-            className=""
-            type="primary"
-            size="large"
-            onClick={handleDownload}
-          >
-            다운로드
-          </Button>
-          <Button
-            className=""
-            type="primary"
-            size="large"
-            onClick={handleDelete}
-          >
-            삭제하기
-          </Button>
+          {!isMain ? (
+            <>
+              <Button
+                className=""
+                type="primary"
+                size="large"
+                onClick={handleDownload}
+              >
+                다운로드
+              </Button>
+
+              <Button
+                className=""
+                type="primary"
+                size="large"
+                onClick={handleDelete}
+              >
+                삭제하기
+              </Button>
+            </>
+          ) : (
+            <Button className="w-full" type="primary" size="large" disabled>
+              기본 메인 비디오입니다.
+            </Button>
+          )}
         </div>
 
         <div className="flex justify-center font-semibold text-base">
@@ -189,7 +195,7 @@ const DivideControl = ({
           defaultValue={[0, 100]}
           onChange={(value) => {
             setSliderValues(value);
-            handleSeek();
+            //   handleSeek();
           }}
           tooltip={{
             formatter: (value) =>
@@ -204,51 +210,80 @@ const DivideControl = ({
           <span>{formatTime(playerState.duration)}</span>
         </div>
       </div>
+
       <div>
-        {mainUrl ? (
-          <ReactPlayer
-            ref={playerRef}
-            width={"100%"}
-            height={300}
-            url={mainUrl}
-            controls={true}
-            onDuration={(duration) => {
-              // 총 시간 저장
-              setPlayerState({ ...playerState, duration: duration });
-              updateState("duration", duration);
-            }}
-            progressInterval={100}
-            onProgress={({ playedSeconds, played }) => {
-              const maxTime = sliderValueToVideoTime(
-                playerState.duration,
-                sliderValues[1]
-              );
-              const minTime = sliderValueToVideoTime(
-                playerState.duration,
-                sliderValues[0]
-              );
+        <ReactPlayer
+          ref={playerRef}
+          width={"100%"}
+          height={300}
+          url={videoSrcRef.current}
+          controls={true}
+          onDuration={(duration) => {
+            // 총 시간 저장
+            setPlayerState({ ...playerState, duration: duration });
+            updateState("duration", duration);
+          }}
+          progressInterval={100}
+          onProgress={({ playedSeconds, played }) => {
+            const maxTime = sliderValueToVideoTime(
+              playerState.duration,
+              sliderValues[1]
+            );
+            const minTime = sliderValueToVideoTime(
+              playerState.duration,
+              sliderValues[0]
+            );
 
-              // 재생 시간 저장
-              setPlayerState({
-                ...playerState,
-                playedSeconds: playedSeconds,
-              });
-              updateState("playedSeconds", playedSeconds);
+            // 재생 시간 저장
+            setPlayerState({
+              ...playerState,
+              playedSeconds: playedSeconds,
+            });
+            updateState("playedSeconds", playedSeconds);
 
-              // 종료 지점
-              if (maxTime !== null && playedSeconds >= maxTime) {
-                playerRef.current.seekTo(minTime, "seconds");
-              }
-            }}
-          />
-        ) : (
-          <div className="flex flex-col w-[200px] h-[200px] gap-2 justify-center items-center text-center">
-            <VideoCameraAddOutlined className="text-[100px]" />
-            <h4>비디오를 첨부해주세요</h4>
-          </div>
-        )}
+            // 종료 지점
+            if (maxTime !== null && playedSeconds >= maxTime) {
+              playerRef.current.seekTo(minTime, "seconds");
+            }
+          }}
+        />
       </div>
+
+      {/* <input
+        className="hidden"
+        ref={mergeUploadRef}
+        name="upload"
+        type="file"
+        accept="video/*"
+        onChange={(e) => {
+          videoSrcRef.current = e.target.files[0];
+          setMainUrl(URL.createObjectURL(videoSrcRef.current));
+          setTitle(videoSrcRef.current.name);
+        }}
+      /> */}
+      {/* <div className="flex justify-center items-center w-full h-[200px] border-dashed border-4  rounded-md hover:bg-slate-400">
+        <div
+          className="flex flex-col justify-center items-center gap-3 "
+          onMouseEnter={() => {
+            if (!ishover) {
+              setIsHover(true);
+            }
+          }}
+          onMouseLeave={() => {
+            if (ishover) {
+              setIsHover(false);
+            }
+          }}
+        >
+          <PlusOutlined className="text-[50px]" />
+          <h1 className="text-xl ">
+            파일을 끌어올리거나 추가하기 버튼을 눌러주세요.
+          </h1>
+          <Button type="primary">추가하기</Button>
+        </div>
+      </div> */}
     </section>
   );
 };
-export default DivideControl;
+
+export default MergeControl;

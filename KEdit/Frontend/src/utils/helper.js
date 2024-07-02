@@ -16,12 +16,12 @@ export const readFileAsBase64 = async (file) => {
   });
 };
 
-export const download = (url) => {
-  console.log(url);
+export const download = (url, name = "", extension = "") => {
   if (url !== "undefined") {
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", "");
+
+    link.setAttribute("download", `${name}.${extension}`);
     link.click();
     message.success("성공적으로 파일을 내보냈습니다.");
   }

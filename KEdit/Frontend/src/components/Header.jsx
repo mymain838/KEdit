@@ -7,7 +7,7 @@ const Header = () => {
       <div className="flex w-[70%] justify-between items-center">
         <div
           onClick={() => {
-            navigate("/login");
+            navigate("/");
           }}
           className="text-4xl font-semibold italic cursor-pointer hover:text-yellow-300"
         >

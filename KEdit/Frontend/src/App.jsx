@@ -6,6 +6,7 @@ import PrivateRoute from "./routes/PrivateRoute";
 import VideoEditor from "./pages/VideoEditor";
 import { ConfigProvider } from "antd";
 import { createContext } from "react";
+import NotFound from "./components/NotFound";
 
 export const LoginContext = createContext([]);
 
@@ -26,7 +27,9 @@ function App() {
         >
           <Routes>
             <Route path="/" element={<PrivateRoute />}>
+              <Route path="/" element={<VideoEditor />} />
               <Route path="/video" element={<VideoEditor />} />
+              <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
         </ConfigProvider>

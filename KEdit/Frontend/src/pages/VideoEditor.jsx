@@ -1,4 +1,4 @@
-import { VideoCameraAddOutlined } from "@ant-design/icons";
+import { PlusOutlined, VideoCameraAddOutlined } from "@ant-design/icons";
 import {
   Button,
   Input,
@@ -19,6 +19,10 @@ import { fetchTitle } from "../api/api,js";
 import { LoginContext } from "../App";
 import DivideControl from "../components/VideoEditor/DivideControl";
 import { transcodeFile, transcodeUrl } from "../utils/transcoding";
+import DivideModal from "../components/VideoEditor/DivideModal";
+import MergeControl from "../components/VideoEditor/MergeControl";
+import MergeModal from "../components/VideoEditor/MergeModal";
+import FilterControl from "../components/VideoEditor/FilterControl";
 export const ffmpeg = createFFmpeg({ log: true });
 
 const VideoEditor = () => {
@@ -26,6 +30,11 @@ const VideoEditor = () => {
   const [progress, setProgress] = useState("");
   // 로딩 컨트롤
   const [isLoading, setIsLoading] = useState(false);
+
+  const [isDivideModalOpen, setIsDivideModalOpen] = useState(false);
+
+  const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
+
   //제목
   const [title, setTitle] = useState("");
   // URL 인풋 값
@@ -34,33 +43,47 @@ const VideoEditor = () => {
   const [mainUrl, setMainUrl] = useState("");
   // 비디오 Output값
   const [videoUrl, setVideoUrl] = useState("");
+  // main 호버 여부
   const [ishover, setIsHover] = useState(false);
+  // merge 업로드부분 호버 여부
+  const [isMergeHover, setIsMergeHover] = useState(false);
+
   const [isPro, setIsPro] = useState(false);
   //퀄리티 설정
   const [quality, setQuality] = useState("low");
   // 슬라이더 값
   const [sliderValues, setSliderValues] = useState([0, 100]);
+
+  const [divideItem, setDivideItem] = useState([]);
+
+  const [mergeItem, setMergeItem] = useState([]);
+
   // 플레이어 상태
   const [playerState, setPlayerState] = useState({
     duration: 0,
     playedSeconds: 0,
   });
+
   // 로그인 컨텍스트
   const [isLogin] = useContext(LoginContext);
 
   // 비디오 경로
   const videoSrcRef = useRef("");
+  // 비디오 경로
+  const mergeSrcRef = useRef("");
   // ReactPlayer의 참조를 저장할 ref
   const playerRef = useRef(null);
   // input 과 업로드 버튼 연동 할 ref
   const firstUploadRef = useRef();
+
+  const mergeUploadRef = useRef();
   //확장자 ref
   const extensionRef = useRef("mp4");
 
   //Divide Ref
   const divideIdRef = useRef(0);
-
-  const [divideItem, setDivideItem] = useState([]);
+  //Merge Ref
+  const mergeIdRef = useRef(0);
 
   const tabsItem = [
     {
@@ -92,10 +115,12 @@ const VideoEditor = () => {
                   ...divideItem,
                   {
                     id: divideIdRef.current,
+                    name: "output",
                     speed: "1",
                     quality: "low",
                     extension: "mp4",
                     sliderValues: [0, 100],
+                    videoSrc: videoSrcRef.current,
                     playerState: {
                       duration: 0,
                       playedSeconds: 0,
@@ -138,7 +163,7 @@ const VideoEditor = () => {
                       );
                     }
 
-                    download(url);
+                    download(url, item.name, item.extension);
                   }
                 }}
               >
@@ -146,7 +171,107 @@ const VideoEditor = () => {
               </Button>
             )}
             {divideItem.length > 1 && (
-              <Button className="mt-3 flex-grow" type="primary" size="large">
+              <Button
+                className="mt-3 flex-grow"
+                type="primary"
+                size="large"
+                onClick={() => {
+                  setIsDivideModalOpen(true);
+                }}
+              >
+                합치기
+              </Button>
+            )}
+          </div>
+        </article>
+      ),
+    },
+
+    {
+      label: `다중 병합`,
+      key: "merge",
+      children: (
+        <article>
+          {mergeItem.map((item) => (
+            <MergeControl
+              key={item.id}
+              id={item.id}
+              isMain={item.isMain}
+              mergeItem={mergeItem}
+              setMergeItem={setMergeItem}
+              setProgress={setProgress}
+              setIsLoading={setIsLoading}
+              mainVideoSrc={videoSrcRef.current}
+              mergevideoSrc={item.videoSrc}
+            />
+          ))}
+          <div
+            className="flex justify-center items-center w-full h-[200px] border-dashed border-4  rounded-md hover:bg-slate-400 hover:cursor-copy"
+            onMouseEnter={() => {
+              if (!isMergeHover) {
+                setIsMergeHover(true);
+              }
+            }}
+            onMouseLeave={() => {
+              if (isMergeHover) {
+                setIsMergeHover(false);
+              }
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              mergeIdRef.current += 1;
+              mergeSrcRef.current = e.dataTransfer.files[0];
+              setMergeItem([
+                ...mergeItem,
+                {
+                  id: mergeIdRef.current,
+                  isMain: true,
+                  name: "output",
+                  speed: "1",
+                  quality: "low",
+                  extension: "mp4",
+                  sliderValues: [0, 100],
+                  videoSrc: mergeSrcRef.current,
+                  playerState: {
+                    duration: 0,
+                    playedSeconds: 0,
+                  },
+                },
+              ]);
+              e.dataTransfer.clearData();
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+            }}
+          >
+            <div className="flex flex-col justify-center items-center gap-3 ">
+              <PlusOutlined className="text-[50px]" />
+              <h1 className="text-xl ">
+                파일을 끌어올리거나 추가하기 버튼을 눌러주세요.
+              </h1>
+              {isMergeHover && (
+                <Button
+                  type="primary"
+                  onClick={() => {
+                    mergeUploadRef.current.click();
+                  }}
+                >
+                  추가하기
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex gap-2 justify-center items-center">
+            {mergeItem.length > 1 && (
+              <Button
+                className="mt-3 flex-grow"
+                type="primary"
+                size="large"
+                onClick={() => {
+                  setIsMergeModalOpen(true);
+                }}
+              >
                 합치기
               </Button>
             )}
@@ -155,14 +280,17 @@ const VideoEditor = () => {
       ),
     },
     {
-      label: `다중 병합`,
-      key: "merge",
-      children: <div>다중병합존</div>,
-    },
-    {
       label: `필터`,
       key: "filter",
-      children: <div>필터존</div>,
+      children: (
+        <FilterControl
+          videoSrcRef={videoSrcRef}
+          mainUrl={mainUrl}
+          setMainUrl={setMainUrl}
+          setIsLoading={setIsLoading}
+          setProgress={setProgress}
+        />
+      ),
     },
   ];
 
@@ -196,6 +324,26 @@ const VideoEditor = () => {
     const blob = await creatBlob(inputUrl, quality);
     setMainUrl(URL.createObjectURL(blob));
 
+    mergeIdRef.current += 1;
+
+    setMergeItem([
+      {
+        id: mergeIdRef.current,
+        isMain: true,
+        name: "output",
+        speed: "1",
+        quality: "low",
+        extension: "mp4",
+        sliderValues: [0, 100],
+        videoSrc: mergeSrcRef.current,
+        playerState: {
+          duration: 0,
+          playedSeconds: 0,
+        },
+      },
+      ...mergeItem,
+    ]);
+
     const title = await fetchTitle(videoSrcRef.current);
     setTitle(title);
     setIsLoading(false);
@@ -221,7 +369,55 @@ const VideoEditor = () => {
         onChange={(e) => {
           videoSrcRef.current = e.target.files[0];
           setMainUrl(URL.createObjectURL(videoSrcRef.current));
+
+          mergeIdRef.current += 1;
+          setMergeItem([
+            {
+              id: mergeIdRef.current,
+              isMain: true,
+              name: "output",
+              speed: "1",
+              quality: "low",
+              extension: "mp4",
+              sliderValues: [0, 100],
+              videoSrc: videoSrcRef.current,
+              playerState: {
+                duration: 0,
+                playedSeconds: 0,
+              },
+            },
+            ...mergeItem,
+          ]);
           setTitle(videoSrcRef.current.name);
+        }}
+      />
+
+      <input
+        className="hidden"
+        ref={mergeUploadRef}
+        name="mergeUpload"
+        type="file"
+        accept="video/*"
+        onChange={(e) => {
+          mergeIdRef.current += 1;
+          mergeSrcRef.current = e.target.files[0];
+          setMergeItem([
+            ...mergeItem,
+            {
+              id: mergeIdRef.current,
+              name: "output",
+              speed: "1",
+              quality: "low",
+              extension: "mp4",
+              sliderValues: [0, 100],
+              videoSrc: mergeSrcRef.current,
+              playerState: {
+                duration: 0,
+                playedSeconds: 0,
+              },
+            },
+          ]);
+          mergeUploadRef.current.value = null;
         }}
       />
       <article className="flex flex-col gap-2">
@@ -235,7 +431,12 @@ const VideoEditor = () => {
                 setMainUrl("");
                 setTitle("");
                 setDivideItem([]);
+                setMergeItem([]);
                 videoSrcRef.current = "";
+                mergeSrcRef.current = "";
+                mergeIdRef.current = 1;
+                divideIdRef.current = 1;
+
                 setSliderValues([0, 100]);
               }}
             >
@@ -384,6 +585,28 @@ const VideoEditor = () => {
         ) : (
           <div>로그인 해라</div>
         ))}
+
+      {isDivideModalOpen && (
+        <DivideModal
+          setProgress={setProgress}
+          setIsLoading={setIsLoading}
+          divideItems={divideItem}
+          setDivideItems={setDivideItem}
+          isDivideModalOpen={isDivideModalOpen}
+          setIsDivideModalOpen={setIsDivideModalOpen}
+          videoSrcRef={videoSrcRef}
+        />
+      )}
+      {isMergeModalOpen && (
+        <MergeModal
+          setProgress={setProgress}
+          setIsLoading={setIsLoading}
+          mergeItems={mergeItem}
+          setMergeItems={setMergeItem}
+          isMergeModalOpen={isMergeModalOpen}
+          setIsMergeModalOpen={setIsMergeModalOpen}
+        />
+      )}
     </article>
   );
 };
