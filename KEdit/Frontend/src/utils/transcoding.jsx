@@ -260,9 +260,9 @@ export const transcodeFilter = async (
 
     await ffmpeg.FS(
       "writeFile",
-      "arial.ttf",
+      "NotoSansKR.ttf",
       await fetchFile(
-        "https://raw.githubusercontent.com/ffmpegwasm/testdata/master/arial.ttf"
+        "https://github.com/mymain838/KEdit/tree/main/KEdit/Frontend/src/font/NotoSansKR-VariableFont_wght.ttf"
       )
     );
 
@@ -270,7 +270,7 @@ export const transcodeFilter = async (
       "-i",
       `input.mp4`,
       "-vf",
-      `drawtext=text='${text}':fontfile=/arial.ttf:fontsize=${textSize}:fontcolor=${textColor}:${positions[textPosition]}`,
+      `drawtext=text='${text}':fontfile=/NotoSansKR.ttf:fontsize=${textSize}:fontcolor=${textColor}:${positions[textPosition]}`,
 
       `output.${extension}`
     );
