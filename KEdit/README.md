@@ -85,3 +85,5 @@ nayan-media-downloader 라이브러리를 사용하여 여러 SNS 사이트 Data
 
 긴 영상에 대한 싱크 문제 1~2초
 속도 저절시 싱크 문제
+
+url / 다중병합 문제

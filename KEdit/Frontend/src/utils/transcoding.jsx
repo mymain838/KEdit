@@ -228,8 +228,17 @@ export const transcodeFilter = async (
   setIsLoading,
   setProgress
 ) => {
+  const positions = {
+    "10,10": "x=10:y=10",
+    "W-tw-10,10": "x=W-tw-10:y=10",
+    "(W-tw)/2,(H-th)/2": "x=(W-tw)/2:y=(H-th)/2",
+    "10,H-th-10": "x=10:y=H-th-10",
+    "W-tw-10,H-th-10": "x=W-tw-10:y=H-th-10",
+  };
+
   try {
     setIsLoading(true);
+    console.log(textPosition);
     const src =
       typeof videoSrc === "string"
         ? `https://kedit.onrender.com/download?url=${videoSrcRef.current}&quality=${quality}`
@@ -248,13 +257,21 @@ export const transcodeFilter = async (
       }
     });
     // 버전 이슈
+
+    await ffmpeg.FS(
+      "writeFile",
+      "arial.ttf",
+      await fetchFile(
+        "https://raw.githubusercontent.com/ffmpegwasm/testdata/master/arial.ttf"
+      )
+    );
+
     await ffmpeg.run(
       "-i",
       `input.mp4`,
       "-vf",
-      `drawtext=text='${text}':fontsize=${textSize}:fontcolor=${textColor}:x=${textPosition[0]}:y=${textPosition[1]}`,
-      `hue=s=${hue}`,
-      `eq=brightness=${bright}`,
+      `drawtext=text='${text}':fontfile=/arial.ttf:fontsize=${textSize}:fontcolor=${textColor}:${positions[textPosition]}`,
+
       `output.${extension}`
     );
     const data = ffmpeg.FS("readFile", `output.${extension}`);

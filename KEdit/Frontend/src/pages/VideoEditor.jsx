@@ -225,7 +225,7 @@ const VideoEditor = () => {
                 ...mergeItem,
                 {
                   id: mergeIdRef.current,
-                  isMain: true,
+                  isMain: false,
                   name: "output",
                   speed: "1",
                   quality: "low",

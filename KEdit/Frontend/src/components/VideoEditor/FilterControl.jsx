@@ -93,7 +93,7 @@ const FilterControl = ({
               <Select
                 defaultValue="10,10"
                 onChange={(value) => {
-                  setTextPosition(value.split(",").map(Number));
+                  setTextPosition(value);
                 }}
               >
                 <Select.Option value="10,10">왼쪽 위</Select.Option>
@@ -140,7 +140,6 @@ const FilterControl = ({
           type="primary"
           size="large"
           onClick={handlePreview}
-          disabled
         >
           미리보기
         </Button>
