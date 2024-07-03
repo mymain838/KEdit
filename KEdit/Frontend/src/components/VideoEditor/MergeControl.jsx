@@ -195,7 +195,7 @@ const MergeControl = ({
           defaultValue={[0, 100]}
           onChange={(value) => {
             setSliderValues(value);
-            //   handleSeek();
+            handleSeek();
           }}
           tooltip={{
             formatter: (value) =>

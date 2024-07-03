@@ -231,7 +231,7 @@ const VideoEditor = () => {
                   quality: "low",
                   extension: "mp4",
                   sliderValues: [0, 100],
-                  videoSrc: mergeSrcRef.current,
+                  videoSrc: mergeSrcRef.current, // ?? 확인필요
                   playerState: {
                     duration: 0,
                     playedSeconds: 0,
@@ -335,7 +335,7 @@ const VideoEditor = () => {
         quality: "low",
         extension: "mp4",
         sliderValues: [0, 100],
-        videoSrc: mergeSrcRef.current,
+        videoSrc: blob,
         playerState: {
           duration: 0,
           playedSeconds: 0,

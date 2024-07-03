@@ -262,7 +262,7 @@ export const transcodeFilter = async (
       "writeFile",
       "NotoSansKR.ttf",
       await fetchFile(
-        "https://github.com/mymain838/KEdit/tree/main/KEdit/Frontend/src/font/NotoSansKR-VariableFont_wght.ttf"
+        "https://raw.githubusercontent.com/mymain838/KEdit/main/KEdit/Frontend/src/font/NotoSansKR-VariableFont_wght.ttf"
       )
     );
 
@@ -270,8 +270,7 @@ export const transcodeFilter = async (
       "-i",
       `input.mp4`,
       "-vf",
-      `drawtext=text='${text}':fontfile=/NotoSansKR.ttf:fontsize=${textSize}:fontcolor=${textColor}:${positions[textPosition]}`,
-
+      `drawtext=text='${text}':fontfile=/NotoSansKR.ttf:fontsize=${textSize}:fontcolor=${textColor}:${positions[textPosition]},eq=brightness=${bright}:saturation=${hue}`,
       `output.${extension}`
     );
     const data = ffmpeg.FS("readFile", `output.${extension}`);

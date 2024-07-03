@@ -2,6 +2,7 @@ import { Button, Form, Input, Select } from "antd";
 import { useState } from "react";
 import ReactPlayer from "react-player";
 import { transcodeFilter } from "../../utils/transcoding";
+import { download } from "../../utils/helper";
 
 const FilterControl = ({
   videoSrcRef,
@@ -10,13 +11,17 @@ const FilterControl = ({
   setIsLoading,
   setProgress,
 }) => {
+  const [filterUrl, setFilterUrl] = useState(mainUrl);
+
   const [hue, setHue] = useState("1");
   const [bright, setBright] = useState("0");
   const [text, setText] = useState("");
   const [textPosition, setTextPosition] = useState(["10", "10"]);
   const [textColor, setTextColor] = useState("white");
   const [textSize, setTextSize] = useState("8");
+  const [name, setName] = useState("output");
   const [extension, setExtension] = useState("mp4");
+  const [isReady, setIsReady] = useState(false);
 
   const handlePreview = async () => {
     let url = "undefined";
@@ -34,12 +39,22 @@ const FilterControl = ({
       setProgress
     );
 
-    setMainUrl(url);
+    setFilterUrl(url);
+    setIsReady(true);
+  };
+
+  const handleDownload = async () => {
+    download(filterUrl, name, extension);
   };
 
   return (
     <article className="flex flex-col gap-4">
-      <ReactPlayer width={"100%"} height={400} url={mainUrl} controls={true} />
+      <ReactPlayer
+        width={"100%"}
+        height={400}
+        url={filterUrl}
+        controls={true}
+      />
       <Form layout="vertical">
         <div className="w-full flex justify-center gap-2">
           <Form.Item className="flex-grow" label="색조">
@@ -132,6 +147,28 @@ const FilterControl = ({
               </Select>
             </Form.Item>
           </div>
+          <div>미리보기를 진행 후 다운로드를 실행해주세요!</div>
+          <div className="flex justify-center gap-2">
+            <Form.Item className="flex-grow">
+              <Input
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                }}
+              />
+            </Form.Item>
+            <Form.Item className="flex-grow">
+              <Select
+                defaultValue={extension}
+                onChange={(value) => setExtension(value)}
+              >
+                <Select.Option value="mp4">mp4</Select.Option>
+                <Select.Option value="avi">avi</Select.Option>
+                <Select.Option value="ogg">ogv</Select.Option>
+                <Select.Option value="webm">webm</Select.Option>
+              </Select>
+            </Form.Item>
+          </div>
         </div>
       </Form>
       <div className="flex gap-2">
@@ -143,9 +180,20 @@ const FilterControl = ({
         >
           미리보기
         </Button>
-        <Button className="flex-grow" type="primary" size="large" disabled>
-          다운로드
-        </Button>
+        {isReady ? (
+          <Button
+            className="flex-grow"
+            type="primary"
+            size="large"
+            onClick={handleDownload}
+          >
+            다운로드
+          </Button>
+        ) : (
+          <Button className="flex-grow" type="primary" size="large" disabled>
+            다운로드
+          </Button>
+        )}
       </div>
     </article>
   );
